@@ -190,7 +190,7 @@ npx watchvideo doctor
 ```
 
 ```
-watchvideo v0.2.0 — dependency check
+watchvideo v0.2.1 — dependency check
 
   OK       yt-dlp
   OK       ffmpeg
@@ -274,7 +274,7 @@ Flags:
 ├── tasks/
 │   └── watch.md                 ← the full analysis run
 ├── frameworks/
-│   ├── media-pipeline.md        ← yt-dlp / ffmpeg / whisper commands + failure tables
+│   ├── media-pipeline.md        ← the three modes, tile geometry, sheet math, failure tables
 │   ├── hook-analysis.md         ← spoken + visual hook taxonomy, format classification
 │   └── topic-research.md        ← web research method, source ranking, counter-search
 ├── templates/
@@ -291,7 +291,11 @@ Run folders are written to your *project*, never into the skill folder.
 
 ## Why contact sheets
 
-One image per video, not one image per frame. Ten videos sampled at ten frames each is a hundred images and will not fit in a context window. The same ten videos as two tiled sheets each is twenty images, and each sheet still shows the cut rhythm across five sampled seconds. That single decision is what lets the skill analyze a batch instead of a single clip.
+Thirty frames per image, not one image per frame. A 10-minute video at 1 frame per second is 600 loose JPEGs, which fits in no context window; the same 600 frames tiled is 20 images. In `hook` mode it collapses further: 20 frames, one image, per video, forever.
+
+That single decision is the difference between analyzing a clip and analyzing a roster. Fifteen competitor reels in `hook` mode is fifteen images and one scoreboard. The same fifteen reels at 1 fps as loose files is roughly 675 images and an immediate dead end.
+
+The cell size is the other half of it. Cells stay 304px wide (250px for vertical), which is enough to read burned-in captions verbatim. Pack more frames per sheet and you save images but lose the on-screen text, and the on-screen text is usually where the hook actually lives.
 
 ---
 

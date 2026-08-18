@@ -1,6 +1,6 @@
 {
   "name": "watchvideo",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Local video analyzer for Claude Code with three modes: hook (first 20 seconds only, one contact sheet per video, built for studying a whole competitor roster), condensed, and forensic (1 frame per second). Downloads with yt-dlp, tiles frames with ffmpeg, transcribes locally with Whisper, reads the sheets with Claude vision, researches the topic, and writes a dated run folder with the transcript and the hook/format/topic breakdown.",
   "keywords": [
     "claude-code",
