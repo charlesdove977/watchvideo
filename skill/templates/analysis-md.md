@@ -12,6 +12,7 @@ Template for `video-analytics/{YYYY-MM-DD}-{slug}/analysis.md` — the breakdown
 # Analysis — {run title}
 
 **Run:** {YYYY-MM-DD}
+**Mode:** `{hook | condensed | forensic}`
 **Videos:** {n}
 **Custom request this run:** {the user's Q2 answer, verbatim — or `none`}
 
@@ -21,6 +22,8 @@ Template for `video-analytics/{YYYY-MM-DD}-{slug}/analysis.md` — the breakdown
 
 **Link:** {canonical url}
 **Duration:** {mm:ss} · **Uploaded:** {date} · **By:** {uploader}
+
+**Sampled:** {n} frames at {1 per second | 1 per 3 seconds}, covering {0:00-0:20 | the full duration} · {n} sheet(s) · {n} of {total source frames} frames seen ({x.x}%)
 
 ### Spoken hook
 
@@ -61,6 +64,8 @@ Covers:
 
 ### Beat sheet
 
+_`condensed` and `forensic` only. In `hook` mode this section is omitted entirely; twenty seconds cannot produce a setup, body, or CTA._
+
 | Time | Beat | Said | Shown |
 | --- | --- | --- | --- |
 | 0:00-0:03 | Hook | "{quote}" | {visual} |
@@ -68,7 +73,18 @@ Covers:
 | 0:18-1:05 | Body | {summary} | {visual} |
 | 1:05-end | CTA | {summary} | {visual} |
 
+### Edit rhythm
+
+_`forensic` only. One frame per second means the cut points are measured, not estimated._
+
+| Window | Cuts | Rhythm |
+| --- | --- | --- |
+| 0:00-0:10 | {n} | {e.g. 1 cut / 1.4 s} |
+| 0:10-0:30 | {n} | {…} |
+
 ### Topic research
+
+_`condensed` and `forensic` only. In `hook` mode write `Topic research: skipped (hook mode)` and nothing else._
 
 **Checked:** {YYYY-MM-DD}
 
@@ -89,6 +105,15 @@ Covers:
 {same block, repeated per video}
 
 ---
+
+## Hook scoreboard
+
+_Required for multi-video `hook` runs. This comparison is the reason the mode exists._
+
+| # | Creator / title | Spoken hook (verbatim) | Hook type | Visual type | Alignment |
+| --- | --- | --- | --- | --- | --- |
+| 1 | {who} | "{quote}" | `{type}` | `{type}` | `{verdict}` |
+| 2 | {who} | "{quote}" | `{type}` | `{type}` | `{verdict}` |
 
 ## Cross-video patterns
 

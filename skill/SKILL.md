@@ -1,17 +1,25 @@
 ---
 name: watchvideo
-description: Watches any video and tells you what it actually did. Downloads with yt-dlp, extracts hook frames and 16 kHz audio with ffmpeg, transcribes locally with Whisper, reads the frames with Claude vision, then researches the topic on the web. Writes a dated run folder under video-analytics/ with the transcript + link, a hook/format/topic breakdown, and any custom deliverable you ask for. Use when the user says "watchvideo", "/watchvideo", "analyze this video", "break down this video", "transcribe this video", "what's the hook in this video", "study this reel", or pastes a video URL and wants it torn down.
+description: Watches any video and tells you what it actually did. Three modes - hook (first 20 seconds only, one sheet per video, built for studying a whole competitor roster), condensed (whole video at 1 frame per 3 seconds), and forensic (whole video at 1 frame per second). Downloads with yt-dlp, tiles frames into contact sheets with ffmpeg, transcribes locally with Whisper, reads the sheets with Claude vision, then researches the topic on the web. Writes a dated run folder under video-analytics/ with the transcript + link, a hook/format/topic breakdown, and any custom deliverable you ask for. Use when the user says "watchvideo", "/watchvideo", "analyze this video", "break down this video", "transcribe this video", "what's the hook in this video", "study this reel", "compare these hooks", or pastes a video URL and wants it torn down.
 type: standalone
-version: 0.1.0
+version: 0.2.0
 category: content
 allowed-tools: [Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, AskUserQuestion]
 metadata:
-  version: 0.1.0
+  version: 0.2.0
 ---
 
 <activation>
 ## What
-A local video analyzer. Give it one or more video URLs (or local files) and it downloads them, samples the frames, transcribes the audio, reads what is on screen, researches the topic on the web, and writes the findings into a dated run folder under `video-analytics/`.
+A local video analyzer. Give it one or more video URLs (or local files) and it downloads them, samples the frames into tiled contact sheets, transcribes the audio, reads what is on screen, researches the topic on the web, and writes the findings into a dated run folder under `video-analytics/`.
+
+Three modes, chosen at the start of every run:
+
+| Mode | Looks at | Cost |
+| --- | --- | --- |
+| `hook` | first 20 seconds, 1 frame/sec, audio trimmed to 0:20 | **1 sheet per video, flat**, however long the video is |
+| `condensed` *(default)* | whole video, 1 frame every 3 s, full audio | ~1 sheet per 90 s |
+| `forensic` | whole video, 1 frame every second, full audio | ~1 sheet per 30 s |
 
 Everything runs on free local tooling: `yt-dlp` for the file, `ffmpeg` for frames + audio, local `openai-whisper` for the transcript, and the Claude Code session itself for vision. No paid scraper, no API key, no MCP required.
 
@@ -19,6 +27,8 @@ Everything runs on free local tooling: `yt-dlp` for the file, `ffmpeg` for frame
 - User runs `/watchvideo` or pastes a video URL and wants it analyzed
 - User wants a transcript of a video plus the link kept together
 - User wants the spoken hook, visual hook, format, and topic of a video pulled apart
+- User wants to compare the hooks across a batch of competitor videos (`hook` mode)
+- User wants a frame-by-frame teardown of one short (`forensic` mode)
 - User wants to know what a video is really about, with web research around the topic
 
 ## Not For
@@ -71,9 +81,10 @@ A video analyst who watches frame by frame and reports what is actually there, n
 <greeting>
 watchvideo loaded. Local pipeline: yt-dlp → ffmpeg → Whisper → vision → web research.
 
-Give me the video (URL or local path). I will ask two things before I start:
-1. **Which video(s)?**
-2. **Anything particular you want out of this run?** (asked every run — it becomes its own file in the output folder)
+Give me the video (URL or local path). I will ask three things before I start:
+1. **Which mode?** `hook` (first 20s only, 1 sheet per video, best for a roster) · `condensed` (default) · `forensic` (1 frame/sec, one short at a time)
+2. **Which video(s)?**
+3. **Anything particular you want out of this run?** (asked every run — it becomes its own file in the output folder)
 
 Output lands in `video-analytics/<date>-<slug>/`:
 - `transcript.md` — the link + full transcript

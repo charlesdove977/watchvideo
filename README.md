@@ -27,7 +27,7 @@ An LLM cannot watch a video. So most "analyze this video" tools either read the 
 watchvideo does what a human analyst does, locally:
 
 - **Gets the file.** `yt-dlp` pulls the video at 720p, plus the platform's own captions as a cross-check.
-- **Looks at it.** `ffmpeg` samples the first five seconds (t=0,1,2,3,5) into one tiled contact sheet, and the rest of the video into a second sheet. Claude reads those images directly. Two images per video, so a ten-video run still fits in context.
+- **Looks at it.** `ffmpeg` samples frames and tiles them into contact sheets, 30 frames to an image. Claude reads those sheets directly. A 10-minute video at 1 frame per second is 600 loose files and fits in nothing; the same 600 frames tiled is 20 images.
 - **Listens to it.** `ffmpeg` extracts 16 kHz mono audio and local Whisper transcribes it, with real segment timestamps. Nothing leaves the machine.
 - **Separates the two hooks.** What the video *says* in the first three seconds and what it *shows* are different signals, and the mismatch between them is usually the finding.
 - **Checks the topic.** It searches the web around the video's actual claim, including a deliberate counter-search, and links its sources.
@@ -44,10 +44,50 @@ whisper  → audio to text   (spoken)
 vision   → read the frames (your Claude Code session)
 ```
 
-Then two questions, always asked before anything downloads:
+Then three questions, always asked before anything downloads:
 
-1. **Which video(s)?** — one URL, several URLs, or a local file. Multiple videos are one run.
-2. **Anything particular you want out of this run?** — asked **every run**. Answer it and you get an extra file built exactly for that ask. Say "standard" and you get the two defaults.
+1. **Which mode?** — `hook`, `condensed`, or `forensic`. See below.
+2. **Which video(s)?** — one URL, several URLs, or a local file. Multiple videos are one run.
+3. **Anything particular you want out of this run?** — asked **every run**. Answer it and you get an extra file built exactly for that ask. Say "standard" and you get the two defaults.
+
+---
+
+## The three modes
+
+Frame density is the only real variable in a tool like this, so it is the thing you pick.
+
+| Mode | Window | Sampling | Audio | Best for |
+| --- | --- | --- | --- | --- |
+| **`hook`** | **first 20 s only** | 1 frame/sec = 20 frames | trimmed to 0:20 | a whole competitor roster |
+| **`condensed`** *(default)* | whole video | 1 frame / 3 s | full | one reel, or the shape of a longform |
+| **`forensic`** | whole video | 1 frame / sec | full | frame-by-frame teardown of one short |
+
+**Sheets per video**, measured (30 frames per sheet, cells stay 304px wide so burned-in captions remain readable):
+
+| Duration | `hook` | `condensed` | `forensic` |
+| --- | --- | --- | --- |
+| 45 s reel | 1 | 1 | 2 |
+| 3 min | 1 | 2 | 6 |
+| 10 min | 1 | 7 | 20 |
+| 40 min | 1 | 27 | 80 |
+
+`hook` mode is flat at **one image per video no matter how long it is**, because it stops at 0:20 and trims the audio to match. Fifteen competitor reels is fifteen images and a couple of minutes of Whisper. That is what makes studying a roster practical instead of theoretical.
+
+**The 15-sheet gate.** `ffprobe` gives the duration before a single frame is cut, so the cost is always known up front. If a run would exceed 15 sheets, watchvideo stops and shows you the real math with the cheaper option, instead of silently eating your context:
+
+```
+A 40 minute video in forensic mode is 2,400 frames, 80 sheets.
+That will not fit in one context window.
+  condensed  →  27 sheets
+  hook       →  1 sheet
+Which do you want?
+```
+
+**Modes change the report, not just the frames.** `hook` mode never saw past 0:20, so it drops the beat sheet, the CTA timestamp, and the topic research rather than inventing them, and instead writes a **hook scoreboard**: every video in the run as a row, with the verbatim spoken hook, hook type, visual type, and alignment verdict. `forensic` mode adds a measured edit-rhythm section, which is impossible at lower density. Every run stamps what it actually sampled:
+
+```
+Sampled: 45 frames at 1 per second, covering the full duration · 2 sheets · 45 of 1,350 frames seen (3.3%)
+```
 
 ---
 
@@ -59,8 +99,8 @@ video-analytics/2026-08-18-how-i-automate-outreach/
 ├── analysis.md            ← spoken hook, visual hook, format, topic, beat sheet, web research
 ├── hook-rewrites.md       ← only when you asked for something in question 2
 ├── media/                 ← the downloaded mp4(s)
-├── audio/                 ← 16 kHz mono wav(s)
-└── frames/                ← hook + body contact sheets
+├── audio/                 ← 16 kHz mono wav(s), trimmed to 20 s in hook mode
+└── frames/                ← contact sheets: 1 in hook mode, numbered otherwise
 ```
 
 **`transcript.md`** keeps the words and the source link in the same file, so a transcript is never orphaned from the video it came from.
@@ -150,7 +190,7 @@ npx watchvideo doctor
 ```
 
 ```
-watchvideo v0.1.0 — dependency check
+watchvideo v0.2.0 — dependency check
 
   OK       yt-dlp
   OK       ffmpeg
@@ -184,7 +224,15 @@ or straight to the point:
 /watchvideo https://www.youtube.com/watch?v=...
 ```
 
-It asks the two questions, then runs the pipeline and reports back with the folder path and a one-line summary per video. The full transcript goes to the file, not to your chat window.
+It asks the three questions, then runs the pipeline and reports back with the folder path and a one-line summary per video. The full transcript goes to the file, not to your chat window.
+
+Studying a batch is the same command:
+
+```
+/watchvideo hook mode on these five: <url> <url> <url> <url> <url>
+```
+
+Five images, five transcripts of the first 20 seconds, and one scoreboard comparing all five hooks side by side.
 
 ### Whisper model sizes
 
@@ -249,7 +297,8 @@ One image per video, not one image per frame. Ten videos sampled at ten frames e
 
 ## Honest limits
 
-- **It samples, it does not watch every frame.** A gag that lives entirely at 0:37 between two sampled points will be missed. The transcript still catches what was said there.
+- **It samples, it does not watch every frame.** Even `forensic` mode is 1 frame per second on 30fps footage, so it sees 1 frame in 30. Every run stamps the real percentage in `analysis.md` rather than claiming it watched the whole thing.
+- **`hook` mode only knows the first 20 seconds.** Not the middle, not the CTA, not the payoff. It says so in the file instead of guessing, and skips the topic research entirely.
 - **It cannot tell you why a video performed.** Retention, traffic source, and audience data are not in the file. The skill says `unverified` rather than guessing at them.
 - **Auto-captions are a cross-check, not the transcript.** Whisper output is the record.
 - **YouTube blocks some downloads.** Keep `yt-dlp` current (`pip install -U yt-dlp`, or the nightly channel). When a video 403s anyway, the skill says so and falls back to the captions rather than pretending it watched the file.

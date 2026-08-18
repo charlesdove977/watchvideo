@@ -12,8 +12,11 @@ Template for `video-analytics/{YYYY-MM-DD}-{slug}/transcript.md` — the link pl
 # Transcript — {run title}
 
 **Run:** {YYYY-MM-DD}
+**Mode:** `{hook | condensed | forensic}`
 **Videos in this run:** {n}
 **Transcribed with:** openai-whisper `{model}` (local)
+
+> **In `hook` mode the audio is trimmed to the first 20 seconds before transcription.** Every transcript below therefore covers `0:00-0:20` only, not the whole video. This banner is dropped for `condensed` and `forensic` runs, which transcribe the full length.
 
 ---
 

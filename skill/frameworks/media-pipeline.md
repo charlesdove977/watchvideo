@@ -81,26 +81,104 @@ ffprobe -v error -select_streams a -show_entries stream=codec_type -of csv=p=0 "
 
 Empty output = no audio track. Record the video as silent and analyze it on frames alone.
 
-### Hook contact sheet (t = 0, 1, 2, 3, 5 s, tiled 5×1)
+### The three modes
+
+Frame density is the only real variable in this skill, and it is what the mode selects. Everything else follows from it.
+
+| Mode | Window | Sampling | Audio transcribed | Use it for |
+| --- | --- | --- | --- | --- |
+| `hook` | **first 20 s only** | 1 frame / second = 20 frames | first 20 s only | a roster. 15 competitor reels stays 15 images |
+| `condensed` *(default)* | whole video | 1 frame / 3 s | whole video | one reel, or getting the shape of a longform |
+| `forensic` | whole video | 1 frame / second | whole video | a frame-by-frame teardown of one short |
+
+**Tile geometry depends on orientation.** Check it once per video:
 
 ```bash
-ffmpeg -nostdin -loglevel error -y -i "<run>/media/<basename>.mp4" \
-  -vf "select='eq(n\,0)+lt(abs(t-1),0.04)+lt(abs(t-2),0.04)+lt(abs(t-3),0.04)+lt(abs(t-5),0.04)',scale=304:-1,tile=5x1" \
+ffprobe -v error -select_streams v -show_entries stream=width,height -of csv=p=0 "<in>.mp4"
+```
+
+| Orientation | Cell width | `hook` tile | `condensed` / `forensic` tile | Frames per sheet |
+| --- | --- | --- | --- | --- |
+| Horizontal (w ≥ h) | `scale=304:-1` | `tile=5x4` | `tile=6x5` | 20 / **30** |
+| Vertical (h > w) | `scale=250:-1` | `tile=10x2` | `tile=10x3` | 20 / **30** |
+
+Verified sheet dimensions, 2026-08-18:
+
+| Source | Mode | Sheets | Sheet size |
+| --- | --- | --- | --- |
+| 1280x720, 5 min | `hook` | 1 | 1520 x 684 |
+| 1280x720, 5 min | `condensed` (100 frames) | 4 | 1824 x 855 |
+| 1280x720, 5 min | `forensic` (300 frames) | 10 | 1824 x 855 |
+| 1080x1920, 45 s | `hook` | 1 | 2500 x 888 |
+| 1080x1920, 45 s | `forensic` (45 frames) | 2 | 2500 x 1332 |
+
+### `hook` mode
+
+Twenty seconds, one frame per second, one sheet. The rest of the video is downloaded but never sampled and never transcribed.
+
+```bash
+# 20 frames, one per second, ONE sheet  (horizontal; use scale=250 tile=10x2 for vertical)
+ffmpeg -nostdin -loglevel error -y -t 20 -i "<run>/media/<basename>.mp4" \
+  -vf "fps=1,scale=304:-1,tile=5x4" \
   -frames:v 1 -q:v 4 "<run>/frames/<basename>-hook.jpg" </dev/null
+
+# audio, first 20 s only
+ffmpeg -nostdin -loglevel error -y -t 20 -i "<run>/media/<basename>.mp4" \
+  -vn -ac 1 -ar 16000 "<run>/audio/<basename>.wav" </dev/null
 ```
 
-### Body contact sheet (5 frames spread across the rest of the video)
+Videos shorter than 20 s are taken whole, and the report says so.
+
+Trimming the audio is what makes a roster run fast: Whisper scales with audio length, so capping at 20 s turns a 12-minute video into a few seconds of transcription.
+
+### `condensed` mode (default)
 
 ```bash
-DUR=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "<run>/media/<basename>.mp4")
 ffmpeg -nostdin -loglevel error -y -i "<run>/media/<basename>.mp4" \
-  -vf "select='lt(abs(t-$(echo "$DUR*0.2"|bc -l)),0.5)+lt(abs(t-$(echo "$DUR*0.4"|bc -l)),0.5)+lt(abs(t-$(echo "$DUR*0.6"|bc -l)),0.5)+lt(abs(t-$(echo "$DUR*0.8"|bc -l)),0.5)+lt(abs(t-$(echo "$DUR*0.95"|bc -l)),0.5)',scale=304:-1,tile=5x1" \
-  -frames:v 1 -q:v 4 "<run>/frames/<basename>-body.jpg" </dev/null
+  -vf "fps=1/3,scale=304:-1,tile=6x5" \
+  -q:v 4 "<run>/frames/<basename>-%02d.jpg" </dev/null
 ```
 
-**Why tile.** One image per video costs one vision read. Ten videos as individual frames is a hundred images and will not fit in context; ten videos as two sheets each is twenty. Tiling is the whole reason this scales.
+### `forensic` mode
 
-Skip the body sheet for videos under 8 seconds and say why.
+```bash
+ffmpeg -nostdin -loglevel error -y -i "<run>/media/<basename>.mp4" \
+  -vf "fps=1,scale=304:-1,tile=6x5" \
+  -q:v 4 "<run>/frames/<basename>-%02d.jpg" </dev/null
+```
+
+The last sheet of a `condensed` or `forensic` run is partial when the frame count is not a multiple of 30. ffmpeg emits it with the unused cells padded; that is expected, not a failure.
+
+### Sheet math — compute it BEFORE cutting frames
+
+`ffprobe` gives the duration before a single frame is extracted, so the cost is always knowable up front. Never guess it.
+
+```
+frames  = duration_seconds / interval        (interval: 1 for forensic, 3 for condensed)
+sheets  = ceil(frames / 30)                  (hook is always exactly 1)
+```
+
+| Duration | `hook` | `condensed` | `forensic` |
+| --- | --- | --- | --- |
+| 45 s reel | 1 sheet | 1 sheet | 2 sheets |
+| 3 min | 1 sheet | 2 sheets | 6 sheets |
+| 10 min | 1 sheet | 7 sheets | 20 sheets |
+| 40 min | 1 sheet | 27 sheets | 80 sheets |
+| 2 hr | 1 sheet | 80 sheets | 240 sheets |
+
+**The 15-sheet gate.** If the computed total across all videos in the run exceeds **15 sheets**, stop and show the user the real math plus the cheaper alternative, then wait for a decision:
+
+```
+A 40 minute video in forensic mode is 2,400 frames, 80 sheets.
+That will not fit in one context window.
+  condensed  →  27 sheets
+  hook       →  1 sheet
+Which do you want?
+```
+
+Under 15 sheets, just run. Do not ask on every video; the gate exists for the genuinely expensive case.
+
+**Why tile at all.** One image per sheet costs one vision read. A 10-minute video at 1 fps as loose files is 600 images and will not fit in any context window; the same 600 frames tiled is 20 images. Tiling is the whole reason this scales, and it is what separates sampling from dumping a folder full of JPEGs.
 
 ---
 
