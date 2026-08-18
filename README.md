@@ -190,7 +190,7 @@ npx watchvideo doctor
 ```
 
 ```
-watchvideo v0.2.1 — dependency check
+watchvideo v0.2.2 — dependency check
 
   OK       yt-dlp
   OK       ffmpeg

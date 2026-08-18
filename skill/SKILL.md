@@ -2,11 +2,11 @@
 name: watchvideo
 description: Watches any video and tells you what it actually did. Three modes - hook (first 20 seconds only, one sheet per video, built for studying a whole competitor roster), condensed (whole video at 1 frame per 3 seconds), and forensic (whole video at 1 frame per second). Downloads with yt-dlp, tiles frames into contact sheets with ffmpeg, transcribes locally with Whisper, reads the sheets with Claude vision, then researches the topic on the web. Writes a dated run folder under video-analytics/ with the transcript + link, a hook/format/topic breakdown, and any custom deliverable you ask for. Use when the user says "watchvideo", "/watchvideo", "analyze this video", "break down this video", "transcribe this video", "what's the hook in this video", "study this reel", "compare these hooks", or pastes a video URL and wants it torn down.
 type: standalone
-version: 0.2.0
+version: 0.2.2
 category: content
 allowed-tools: [Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, AskUserQuestion]
 metadata:
-  version: 0.2.0
+  version: 0.2.2
 ---
 
 <activation>
