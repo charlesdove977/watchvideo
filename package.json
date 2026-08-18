@@ -1,0 +1,45 @@
+{
+  "name": "watchvideo",
+  "version": "0.1.0",
+  "description": "Local video analyzer for Claude Code: downloads a video with yt-dlp, extracts hook frames and 16 kHz audio with ffmpeg, transcribes locally with Whisper, reads the frames with Claude vision, researches the topic, and writes a dated run folder with the transcript, the hook/format/topic breakdown, and whatever you asked for.",
+  "keywords": [
+    "claude-code",
+    "claude",
+    "skill",
+    "video-analysis",
+    "transcription",
+    "whisper",
+    "yt-dlp",
+    "ffmpeg",
+    "hook-analysis",
+    "content-research",
+    "video-transcript",
+    "creator-tools"
+  ],
+  "homepage": "https://github.com/charlesdove977/watchvideo#readme",
+  "bugs": {
+    "url": "https://github.com/charlesdove977/watchvideo/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/charlesdove977/watchvideo.git"
+  },
+  "license": "MIT",
+  "author": "Charles J Dove",
+  "type": "commonjs",
+  "bin": {
+    "watchvideo": "bin/watchvideo.js"
+  },
+  "files": [
+    "bin/",
+    "skill/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=14"
+  },
+  "scripts": {
+    "test": "node bin/watchvideo.js --version && echo 'OK'"
+  }
+}
