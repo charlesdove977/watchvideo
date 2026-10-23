@@ -18,6 +18,8 @@ watchvideo ships the **`watchvideo`** skill: one command that turns a video into
 
 Built for creators, marketers, and anyone who studies video for a living and is tired of scrubbing a timeline with a notepad open.
 
+**Want every competitor video broken down for you?** Join [CC Strategic AI +](https://www.skool.com/cc-strategic-ai-plus/about): my 27-day Claude Code mastery program with a 1-click install setup file, and you work with us to land your first AI client in 90 days, or your money back.
+
 Step-by-step guide and setup walkthrough: [watchvideo guide on charlieautomates.com](https://charlieautomates.com/free-resources/#watchvideo)
 
 ---
