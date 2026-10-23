@@ -18,6 +18,8 @@ watchvideo ships the **`watchvideo`** skill: one command that turns a video into
 
 Built for creators, marketers, and anyone who studies video for a living and is tired of scrubbing a timeline with a notepad open.
 
+Step-by-step guide and setup walkthrough: [watchvideo guide on charlieautomates.com](https://charlieautomates.com/free-resources/#watchvideo)
+
 ---
 
 ## Why
